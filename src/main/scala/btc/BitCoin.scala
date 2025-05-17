@@ -3,7 +3,7 @@ package  btc
 import java.security.MessageDigest
 
 object BitCoin:
-    implicit val field: Field[Field.Element] = Field.modP(
+    implicit val field: Field.Element.ModP = new Field.Element.ModP(
         BigInt("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141", 16)
     )
     implicit val curve: Curve[Field.Element] = Curve(
@@ -29,6 +29,10 @@ object BitCoin:
         sha256(sha256(message))
 
 
+    import Field.Element._
+    import Curve.Point.group
+    import Group._
+    import Field._
     case class Signature(
         z: Field.Element,
         r: Field.Element,
@@ -36,8 +40,6 @@ object BitCoin:
     )
 
     class Verifier(P: Curve.Point[Field.Element]):
-        import btc.Field._
-        import btc.Group._
         def verify(signature: Signature) =
             val u = signature.z/signature.s
             val v = signature.r/signature.s
@@ -48,9 +50,6 @@ object BitCoin:
     class Signer(
         e: Field.Element, // Private Key
         P: Curve.Point[Field.Element]): // Public Key)
-        import btc.Field._
-        import btc.Group._
-
         assert(e * G == P)
 
         def toBigInt(bytes: Array[Byte]) =

@@ -1,5 +1,7 @@
 package btc
 
+import java.nio.ByteBuffer
+
 trait Field[E] extends Group[E]:
     def one: E
     def prod(a: E, b: E): E
@@ -12,34 +14,52 @@ object Field:
 
     case class Element(value: BigInt) extends AnyVal
 
-    def modP(prime: BigInt): Field[Element] = new Field[Element]:
-        def norm(value: BigInt): Element = 
-            if value > 0 then Element(value % prime) else Element((prime + value) % prime)
-        def zero = Element(BigInt(0))
-        def one = Element(BigInt(1))
-        def add(a: Element, b: Element) =
-            norm(a.value + b.value)
-        def prod(a: Element, b: Element) = 
-            norm(a.value * b.value)
-        def neg(a: Element) =
-            norm(-a.value)
-        def inv(a: Element) =
-            norm(a.value.modPow(prime - 2, prime))
+    trait CanFastSqrt[E]: 
+        def sqrt(a: E): E
+    object Element:
+        given serialize(using serialize: Serialize[BigInt]): Serialize[Element] = new Serialize[Element]:
+            def write(value: Element, buffer: ByteBuffer) = serialize.write(value.value, buffer)
 
-    extension (a: Element)(using field: Field[Element])
-        inline def *[G](b: G)(using group: Group[G]) = 
-            import btc.Group._
+        given deserialize(using deserialize: Deserialize[BigInt], modP: ModP): Deserialize[Element] = new Deserialize[Element]:
+            def read(buffer: ByteBuffer) = for {
+                    value <- deserialize.read(buffer)
+                } yield modP.norm(value)
 
-            var result = group.zero
-            var x = b
-            
-            var p = a.value
-            while p > 0 do
-                if p % 2 == 1 then 
-                    result = result + x
-                x = x + x
-                p = p >> 1
+        class ModP(val prime: BigInt) extends Field[Element]:
+            def norm(value: BigInt): Element = 
+                if value > 0 then Element(value % prime) else Element((prime + value) % prime)
+            def zero = Element(BigInt(0))
+            def one = Element(BigInt(1))
+            def add(a: Element, b: Element) =
+                norm(a.value + b.value)
+            def prod(a: Element, b: Element) = 
+                norm(a.value * b.value)
+            def neg(a: Element) =
+                norm(-a.value)
+            def inv(a: Element) =
+                norm(a.value.modPow(prime - 2, prime))
 
-            result
-            
+        def canFastSqrt(using modP: ModP): CanFastSqrt[Element] = 
+            assert((modP.prime + 1) % 4 == BigInt(0))
+            val factor = (modP.prime + 1) / 4
+            new CanFastSqrt[Element]:
+                def sqrt(a: Element): Element = 
+                    Element(a.value.modPow(factor, modP.prime))
+
+        extension (a: Element)(using field: Field[Element])
+            inline def *[G](b: G)(using group: Group[G]) = 
+                import btc.Group._
+
+                var result = group.zero
+                var x = b
+                
+                var p = a.value
+                while p > 0 do
+                    if p % 2 == 1 then 
+                        result = result + x
+                    x = x + x
+                    p = p >> 1
+
+                result
+                
             

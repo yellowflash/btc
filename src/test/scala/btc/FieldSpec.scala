@@ -13,8 +13,8 @@ class FieldSpec extends AnyFlatSpec:
     val `seven` = Element(BigInt(7))
     val `eight` = Element(BigInt(8))
     val `ten` = Element(BigInt(10))
-    implicit val `mod 11`: Field[Element] = 
-        Field.modP(BigInt(11));
+    implicit val `mod 11`: Field.Element.ModP = 
+        new Field.Element.ModP(BigInt(11));
 
     import Group._
 
