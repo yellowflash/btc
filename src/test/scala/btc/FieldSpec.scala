@@ -45,3 +45,11 @@ class FieldSpec extends AnyFlatSpec:
         (eight / eight) shouldBe one
         (zero / four) shouldBe zero
     }
+
+    it should "find n times group" in {
+        import Group.bigIntGroup
+        import Field.Element.*
+
+        four * BigInt(10)  shouldBe (BigInt(40))
+        (- four) * BigInt(10) shouldBe (BigInt(70))
+    }

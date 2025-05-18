@@ -96,12 +96,12 @@ object Curve:
             def zero = Point.Infinity
             def neg(a: Point[E]) = a.mirror
             def add(a: Point[E], b: Point[E]) = a match 
-                case Point.Infinity => b.mirror
+                case Point.Infinity => b
                 case Point.InCurve(x1, y1) => b match 
-                    case Point.Infinity =>  a.mirror
+                    case Point.Infinity =>  a
                     case Point.InCurve(x2, y2) if x1 == x2 && y1 == -y2 =>
                         Point.Infinity
-                    case Point.InCurve(x2, y2) if x1 == x2 && y1 == 0 =>
+                    case Point.InCurve(x2, y2) if x1 == x2 =>
                         val s = (three * x1 * x1 + curve.a)/(two * y1)
                         val x3 = s * s - two * x1
                         val y3 = s * (x1 - x3) - y1

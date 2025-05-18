@@ -28,11 +28,24 @@ object BitCoin:
     def hash256(message: Array[Byte]) =
         sha256(sha256(message))
 
-
     import Field.Element._
     import Curve.Point.group
     import Group._
     import Field._
+
+    def hashedElement(message: String): Field.Element =
+        hashedElement(message.getBytes)
+
+    def hashedElement(bytes: Array[Byte]): Field.Element =
+        Field.Element(
+            hash256(bytes)
+                .foldLeft(BigInt(0)){
+                    (a, b) => (a << 8) + BigInt(Array[Byte](0, b))
+                }
+        )
+
+    def PublicKey(e: Field.Element) = e * G
+
     case class Signature(
         z: Field.Element,
         r: Field.Element,
@@ -47,16 +60,9 @@ object BitCoin:
                 case Curve.Point.Infinity => false
                 case Curve.Point.InCurve(x, _) => x == signature.r
 
-    class Signer(
-        e: Field.Element, // Private Key
-        P: Curve.Point[Field.Element]): // Public Key)
-        assert(e * G == P)
-
-        def toBigInt(bytes: Array[Byte]) =
-            bytes.foldLeft(BigInt(0))(_ << 8 + _)
-
+    class Signer(e: Field.Element):
         def sign(message: Array[Byte], k: Field.Element): Option[Signature] =
-            val z = Field.Element(toBigInt(hash256(message)))
+            val z = hashedElement(message)
             (k * G) match
                 case Curve.Point.Infinity => None
                 case Curve.Point.InCurve(r, _) =>

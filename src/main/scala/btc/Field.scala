@@ -17,6 +17,7 @@ object Field:
     trait CanFastSqrt[E]: 
         def sqrt(a: E): E
     object Element:
+        def apply(value: Int): Field.Element = Field.Element(BigInt(value))
         given serialize(using serialize: Serialize[BigInt]): Serialize[Element] = new Serialize[Element]:
             def write(value: Element, buffer: ByteBuffer) = serialize.write(value.value, buffer)
 
@@ -55,11 +56,21 @@ object Field:
                 
                 var p = a.value
                 while p > 0 do
-                    if p % 2 == 1 then 
+                    if p.testBit(0) then 
                         result = result + x
                     x = x + x
                     p = p >> 1
 
+
                 result
                 
+    given doubleIsField: Field[Double] = new Field[Double]:
+        def zero = 0.0
+        def one = 1.0
+        def add(a: Double, b: Double) = a + b
+        def prod(a: Double, b: Double) = a * b 
+        def neg(a: Double) = -a
+        def inv(a: Double) = 1 / a
+
+
             
