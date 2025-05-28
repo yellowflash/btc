@@ -101,7 +101,7 @@ object Curve:
                     case Point.Infinity =>  a
                     case Point.InCurve(x2, y2) if x1 == x2 && y1 == -y2 =>
                         Point.Infinity
-                    case Point.InCurve(x2, y2) if x1 == x2 =>
+                    case Point.InCurve(x2, y2) if x1 == x2 && y1 == y2 =>
                         val s = (three * x1 * x1 + curve.a)/(two * y1)
                         val x3 = s * s - two * x1
                         val y3 = s * (x1 - x3) - y1

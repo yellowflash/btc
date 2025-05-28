@@ -21,28 +21,19 @@ object Serde:
         val zero: Byte = 0x00
         def write(value: BigInt, buffer: ByteBuffer): ByteBuffer = 
             val bytes = value.toByteArray
+            val paddedBytes = Array.fill(length)(zero)
             
-            bytes
-                .length
-                .to(length)
-                .foreach(_ => buffer.put(zero))
+            // Copy the least significant bytes into the padded array
+            val copyStart = Math.max(0, bytes.length - length)
+            val copyLength = Math.min(bytes.length, length)
+            System.arraycopy(bytes, copyStart, paddedBytes, length - copyLength, copyLength)
             
-            val lastIndex = if bytes.length > length then 1 else 0
-
-            bytes
-                .length
-                .to(lastIndex)
-                .foreach(i => buffer.put(bytes(i)))
-
-            buffer
+            buffer.order(ByteOrder.BIG_ENDIAN).put(paddedBytes)
 
         def read(buffer: ByteBuffer): Either[String, BigInt] = 
-            val bytes: Array[Byte] = Array.fill(length + 1)(0x00)
-            if buffer.remaining() < 256 
-            then {
+            val bytes: Array[Byte] = Array.fill(length)(0x00)
+            if buffer.remaining() < length then 
                 Left(s"Insufficient bytes ${buffer.remaining()} < 256 found")
-            } else {
-                buffer.order(ByteOrder.BIG_ENDIAN).get(bytes, 1, length)
-                Right(BigInt(bytes))
-            }
-        
+            else
+                buffer.order(ByteOrder.BIG_ENDIAN).get(bytes)
+                Right(BigInt(1, bytes))

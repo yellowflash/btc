@@ -1,6 +1,7 @@
 package btc
 
 import java.nio.ByteBuffer
+import scala.annotation.threadUnsafe
 
 trait Field[E] extends Group[E]:
     def one: E
@@ -12,12 +13,15 @@ object Field:
         inline def *(b: E) = f.prod(a, b)
         inline def /(b: E) = f.prod(a, f.inv(b))
 
-    case class Element(value: BigInt) extends AnyVal
+    case class Element(value: BigInt) extends AnyVal:
+        override def toString: String = value.toString(16)
 
     trait CanFastSqrt[E]: 
         def sqrt(a: E): E
     object Element:
         def apply(value: Int): Field.Element = Field.Element(BigInt(value))
+        def apply(value: String, radix: Int = 16): Field.Element = 
+            Field.Element(BigInt(value, radix))
         given serialize(using serialize: Serialize[BigInt]): Serialize[Element] = new Serialize[Element]:
             def write(value: Element, buffer: ByteBuffer) = serialize.write(value.value, buffer)
 
@@ -53,14 +57,13 @@ object Field:
 
                 var result = group.zero
                 var x = b
-                
+               
                 var p = a.value
                 while p > 0 do
                     if p.testBit(0) then 
                         result = result + x
                     x = x + x
                     p = p >> 1
-
 
                 result
                 

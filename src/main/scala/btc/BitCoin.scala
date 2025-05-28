@@ -3,21 +3,10 @@ package  btc
 import java.security.MessageDigest
 
 object BitCoin:
-    implicit val field: Field.Element.ModP = new Field.Element.ModP(
-        BigInt("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141", 16)
-    )
-    implicit val curve: Curve[Field.Element] = Curve(
-        Field.Element(BigInt(0)),
-        Field.Element(BigInt(7))
-    )
+    val n = BigInt("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16)
 
-    val Gx = Field.Element(
-        BigInt("79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798", 16)
-    )
-
-    val Gy = Field.Element(
-        BigInt("483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8", 16)
-    )
+    val Gx = Field.Element("79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798")
+    val Gy = Field.Element("483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8")
 
     val G = Curve.Point.InCurve(Gx, Gy)
 
@@ -29,20 +18,27 @@ object BitCoin:
         sha256(sha256(message))
 
     import Field.Element._
-    import Curve.Point.group
     import Group._
     import Field._
+
+    implicit val curveGroup: Group[Curve.Point[Field.Element]] =  {
+      implicit val field: Field.Element.ModP = new Field.Element.ModP(
+          BigInt("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", 16)
+      )
+      implicit val curve: Curve[Field.Element] = Curve(
+          Field.Element(BigInt(0)),
+          Field.Element(BigInt(7))
+      )
+      Curve.Point.group
+    }
+
+    implicit val curveFactor: Field.Element.ModP = new Field.Element.ModP(n)
 
     def hashedElement(message: String): Field.Element =
         hashedElement(message.getBytes)
 
     def hashedElement(bytes: Array[Byte]): Field.Element =
-        Field.Element(
-            hash256(bytes)
-                .foldLeft(BigInt(0)){
-                    (a, b) => (a << 8) + BigInt(Array[Byte](0, b))
-                }
-        )
+        Field.Element(BigInt(1, hash256(bytes)))
 
     def PublicKey(e: Field.Element) = e * G
 
@@ -66,7 +62,7 @@ object BitCoin:
             (k * G) match
                 case Curve.Point.Infinity => None
                 case Curve.Point.InCurve(r, _) =>
-                    val s = (z + r * e) / k
+                    val s = (z + (r * e)) / k
                     Some(Signature(z, r, s))
 
                 
